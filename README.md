@@ -1,2 +1,2 @@
 # InfinityPicker
-![InfinityPicker]((https://raw.githubusercontent.com/Jasbir23/Infinite-Picker-React-Native/master/src/InfiPicker.gif)
+![InfinityPicker](https://github.com/Jasbir23/Infinite-Picker-React-Native/raw/master/src/InfiPicker.gif)
