@@ -6,7 +6,8 @@ import {
   Image,
   TouchableOpacity,
   Animated,
-  StatusBar
+  StatusBar,
+  Alert
 } from "react-native";
 const { height, width } = Dimensions.get("window");
 const optnHeight = height / 12;
@@ -55,27 +56,19 @@ export default class NoFlatScroller extends Component {
         { key: 6, url: "https://mfiles.alphacoders.com/671/671241.jpg" }
       ],
       scrollPos: 120 * optnHeight,
-      componentReady: false
+      componentReady: false,
+      exception: 0
     };
   }
   componentDidMount() {
-    this.addItems();
-    for (var i = 0; i < 40; i++) {
+    this.addItems(0);
+    for (var i = 1; i < 40; i++) {
       setTimeout(() => {
-        this.addItems();
-      }, 1);
+        this.addItems(i);
+      }, 0.1);
     }
-    setTimeout(() => {
-      this.refs.flatlist._component.scrollTo({
-        y: 120 * optnHeight,
-        animated: false
-      });
-      this.setState({
-        componentReady: true
-      });
-    }, 2);
   }
-  addItems() {
+  addItems(i) {
     let arr = this.state.data;
     let arr2 = [
       { key: this.state.nextKey, name: "Batman" },
@@ -119,8 +112,21 @@ export default class NoFlatScroller extends Component {
     this.setState({
       nextKey: this.state.nextKey + 6,
       data: arr.concat(arr2),
-      images: parr.concat(parr2)
+      images: parr.concat(parr2),
+      componentReady: this.state.nextKey + 6 === 247 ? true : false
     });
+    if (this.state.nextKey + 6 === 247) {
+      Alert.alert(
+        "Note",
+        "Images might take a while to load depending on wifi speed"
+      );
+      setTimeout(() => {
+        this.refs.flatlist._component.scrollTo({
+          y: 120 * optnHeight,
+          animated: false
+        });
+      }, 1);
+    }
   }
   render() {
     let len = 40 * 6 * optnHeight;
@@ -129,6 +135,22 @@ export default class NoFlatScroller extends Component {
       inputRange: [0, len],
       outputRange: [0, -imgFac * len]
     });
+    if (!this.state.componentReady) {
+      return (
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            backgroundColor: "black"
+          }}
+        >
+          <Text style={{ fontSize: 25, fontWeight: "bold", color: "white" }}>
+            Loading
+          </Text>
+        </View>
+      );
+    }
     return (
       <View style={{ flex: 1 }}>
         <StatusBar barStyle="light-content" />
@@ -196,17 +218,19 @@ export default class NoFlatScroller extends Component {
                 if (!this.state.momentum) {
                   this.refs.flatlist._component.scrollTo({
                     y: Math.round(pos / optnHeight) * optnHeight,
-                    animated: false
+                    animated: true
                   });
                   this.setState({
-                    scrollPos: Math.round(pos / optnHeight) * optnHeight
+                    scrollPos: Math.round(pos / optnHeight) * optnHeight,
+                    scrollEnabled: false
                   });
                 }
               }, 50);
             }}
             onMomentumScrollEnd={e => {
               this.setState({
-                momentum: false
+                momentum: false,
+                scrollEnabled: true
               });
               let ptr = Math.round(e.nativeEvent.contentOffset.y / optnHeight);
               if (e.nativeEvent.contentOffset.y % optnHeight !== 0) {
@@ -219,25 +243,27 @@ export default class NoFlatScroller extends Component {
                 });
               }
               if (ptr > 180 || ptr < 60) {
-                let overFac = Math.abs(ptr - 120);
-                overFac = overFac % 6;
-                if (ptr > 180) {
-                  this.refs.flatlist._component.scrollTo({
-                    y: (120 + overFac) * optnHeight,
-                    animated: false
-                  });
-                  this.setState({
-                    scrollPos: (120 + overFac) * optnHeight
-                  });
-                } else if (ptr < 60) {
-                  this.refs.flatlist._component.scrollTo({
-                    y: (120 - overFac) * optnHeight,
-                    animated: false
-                  });
-                  this.setState({
-                    scrollPos: (120 - overFac) * optnHeight
-                  });
-                }
+                setTimeout(() => {
+                  let overFac = Math.abs(ptr - 120);
+                  overFac = overFac % 6;
+                  if (ptr > 180) {
+                    this.refs.flatlist._component.scrollTo({
+                      y: (120 + overFac) * optnHeight,
+                      animated: false
+                    });
+                    this.setState({
+                      scrollPos: (120 + overFac) * optnHeight
+                    });
+                  } else if (ptr < 60) {
+                    this.refs.flatlist._component.scrollTo({
+                      y: (120 - overFac) * optnHeight,
+                      animated: false
+                    });
+                    this.setState({
+                      scrollPos: (120 - overFac) * optnHeight
+                    });
+                  }
+                }, 100);
               }
             }}
           >
@@ -255,7 +281,8 @@ export default class NoFlatScroller extends Component {
                       animated: true
                     });
                     this.setState({
-                      scrollPos: (item.key - 1) * optnHeight
+                      scrollPos: (item.key - 1) * optnHeight,
+                      scrollEnabled: false
                     });
                   }}
                 >
