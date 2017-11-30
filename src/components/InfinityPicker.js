@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Animated,
   StatusBar,
-  Alert
+  Alert,
+  Platform
 } from "react-native";
 const { height, width } = Dimensions.get("window");
 const optnHeight = height / 12;
@@ -28,6 +29,7 @@ export default class NoFlatScroller extends Component {
       ani: new Animated.Value(0),
       momentum: false,
       scrollEnabled: true,
+      momentumStart: 0,
       images: [
         {
           key: 1,
@@ -56,8 +58,7 @@ export default class NoFlatScroller extends Component {
         { key: 6, url: "https://mfiles.alphacoders.com/671/671241.jpg" }
       ],
       scrollPos: 120 * optnHeight,
-      componentReady: false,
-      exception: 0
+      componentReady: false
     };
   }
   componentDidMount() {
@@ -65,7 +66,7 @@ export default class NoFlatScroller extends Component {
     for (var i = 1; i < 40; i++) {
       setTimeout(() => {
         this.addItems(i);
-      }, 0.1);
+      }, 0);
     }
   }
   addItems(i) {
@@ -216,55 +217,64 @@ export default class NoFlatScroller extends Component {
               let pos = e.nativeEvent.contentOffset.y;
               setTimeout(() => {
                 if (!this.state.momentum) {
-                  this.refs.flatlist._component.scrollTo({
-                    y: Math.round(pos / optnHeight) * optnHeight,
-                    animated: true
-                  });
-                  this.setState({
-                    scrollPos: Math.round(pos / optnHeight) * optnHeight,
-                    scrollEnabled: false
-                  });
+                  this.setState(
+                    {
+                      scrollPos: Math.round(pos / optnHeight) * optnHeight
+                    },
+                    () => {
+                      this.refs.flatlist._component.scrollTo({
+                        y: Math.round(pos / optnHeight) * optnHeight,
+                        animated: true
+                      });
+                    }
+                  );
                 }
-              }, 50);
+              }, 0);
             }}
             onMomentumScrollEnd={e => {
-              this.setState({
-                momentum: false,
-                scrollEnabled: true
-              });
               let ptr = Math.round(e.nativeEvent.contentOffset.y / optnHeight);
-              if (e.nativeEvent.contentOffset.y % optnHeight !== 0) {
-                this.refs.flatlist._component.scrollTo({
-                  y: ptr * optnHeight,
-                  animated: false
-                });
-                this.setState({
-                  scrollPos: ptr * optnHeight
-                });
-              }
               if (ptr > 180 || ptr < 60) {
-                setTimeout(() => {
-                  let overFac = Math.abs(ptr - 120);
-                  overFac = overFac % 6;
-                  if (ptr > 180) {
+                let overFac = Math.abs(ptr - 120);
+                overFac = overFac % 6;
+                if (ptr > 180) {
+                  this.refs.flatlist._component.scrollTo({
+                    y: (120 + overFac) * optnHeight,
+                    animated: false
+                  });
+                  this.setState({
+                    scrollPos: (120 + overFac) * optnHeight
+                  });
+                } else if (ptr < 60) {
+                  this.refs.flatlist._component.scrollTo({
+                    y: (120 - overFac) * optnHeight,
+                    animated: false
+                  });
+                  this.setState({
+                    scrollPos: (120 - overFac) * optnHeight
+                  });
+                }
+              }
+              if (
+                e.nativeEvent.contentOffset.y % optnHeight !== 0 &&
+                ptr < 180 &&
+                ptr > 60 &&
+                this.state.momentum
+              ) {
+                this.setState(
+                  {
+                    scrollPos: ptr * optnHeight
+                  },
+                  () => {
                     this.refs.flatlist._component.scrollTo({
-                      y: (120 + overFac) * optnHeight,
-                      animated: false
-                    });
-                    this.setState({
-                      scrollPos: (120 + overFac) * optnHeight
-                    });
-                  } else if (ptr < 60) {
-                    this.refs.flatlist._component.scrollTo({
-                      y: (120 - overFac) * optnHeight,
-                      animated: false
-                    });
-                    this.setState({
-                      scrollPos: (120 - overFac) * optnHeight
+                      y: ptr * optnHeight,
+                      animated: true
                     });
                   }
-                }, 100);
+                );
               }
+              this.setState({
+                momentum: false
+              });
             }}
           >
             {this.state.data.map((item, index) => {
@@ -276,14 +286,17 @@ export default class NoFlatScroller extends Component {
                   }}
                   key={index}
                   onPress={() => {
-                    this.refs.flatlist._component.scrollTo({
-                      y: (item.key - 1) * optnHeight,
-                      animated: true
-                    });
-                    this.setState({
-                      scrollPos: (item.key - 1) * optnHeight,
-                      scrollEnabled: false
-                    });
+                    this.setState(
+                      {
+                        scrollPos: (item.key - 1) * optnHeight
+                      },
+                      () => {
+                        this.refs.flatlist._component.scrollTo({
+                          y: (item.key - 1) * optnHeight,
+                          animated: true
+                        });
+                      }
+                    );
                   }}
                 >
                   <View
